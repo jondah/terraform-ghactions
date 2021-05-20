@@ -1,0 +1,54 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Terraform Githubaction demo
+
+# Controls when the action will run. 
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    
+    env:
+      ARM_SUBSCRIPTION_ID: 'd44c6c5f-c532-4cbf-8e19-6ee88f30ba8c'
+      ARM_TENANT_ID: '41ded048-d6f9-4758-a8a7-fe69d130fc8a'
+      ARM_CLIENT_ID: '2821dd23-8a38-4423-b70b-511ba8957772'
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      AZURE_STORAGE: 'terraformjd897428957435'
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+      
+      - name: Azure Login
+        uses: Azure/login@v1
+        with:
+          creds: ${{secrets.AZURE_CREDENTIALS }}
+
+      # Runs a single command using the runners shell
+      - name: Build terraform state
+        run: chmod +x ./tfstate.sh && ./tfstate.sh ${{ env.AZURE_STORAGE }}
+
+      - name: HashiCorp - Setup Terraform
+        uses: hashicorp/setup-terraform@v1.2.1
+        
+      - name: Terraform init
+        run: terraform init -backend-config="storrage_account_name=${{env.AZURE_STORAGE }}"
+        
+      - name: Terraform plan
+        run: terraform plan -out=tfplan
+      
+      - name: Terraform Apply
+        run: terraform apply .tfplan
